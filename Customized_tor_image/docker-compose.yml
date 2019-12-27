@@ -1,0 +1,14 @@
+version: '3'
+services:
+
+  #Tor Service
+  tor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tor
+    restart: always
+    tty: true
+    working_dir: /home/tor
+    volumes:
+      - ./config/torrc:/etc/tor/torrc

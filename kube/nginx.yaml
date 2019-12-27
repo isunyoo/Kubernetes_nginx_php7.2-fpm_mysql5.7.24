@@ -1,0 +1,92 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  labels:
+    tier: backend
+spec:
+  selector:
+    app: nginx
+    tier: backend
+  ports:
+    - port: 80
+      targetPort: 80
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config 
+  labels:
+    tier: backend
+data:
+  config : |
+    server {      
+      index index.php index.htm index.html;
+      error_log  /var/log/nginx/error.log;
+      access_log /var/log/nginx/access.log;
+
+      # Set nginx to serve files from the shared volume!
+      root /var/www/html;
+
+      location / {
+          include /etc/nginx/mime.types;
+          try_files $uri $uri/ /index.php?$query_string;
+          gzip_static on;
+      }
+    
+      location ~ \.php$ {
+          try_files $uri =404;
+          fastcgi_split_path_info ^(.+.php)(/.+)$;
+          fastcgi_pass php:9000;
+          fastcgi_index index.php;          
+          fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;          
+          fastcgi_param PATH_INFO $fastcgi_path_info;
+          include fastcgi_params;
+      }     
+
+      location = /favicon.ico { log_not_found off; access_log off; }
+      location = /robots.txt  { access_log off; log_not_found off; }
+      sendfile off;
+      client_max_body_size 100m;
+      
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx 
+  labels:
+    tier: backend
+spec:
+  replicas: 1  
+  selector:
+    matchLabels:
+      app: nginx 
+      tier: backend     
+  template:
+    metadata:
+      labels:
+        app: nginx
+        tier: backend       
+    spec:
+      volumes:
+      - name: www-data
+        persistentVolumeClaim:
+          claimName: www-pvc      
+      - name: config
+        configMap:
+          name: nginx-config
+          items:
+          - key: config
+            path: site.conf
+      containers:
+      - name: nginx
+        image: nginx:1.15
+        ports:        
+        - containerPort: 80        
+        volumeMounts:
+        - name: www-data
+          mountPath: /var/www/html
+        - name: config
+          mountPath: /etc/nginx/conf.d        

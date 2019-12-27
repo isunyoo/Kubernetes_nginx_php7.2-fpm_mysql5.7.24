@@ -1,0 +1,15 @@
+version: '3'
+services:
+
+  #PHP Service
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: digitalocean.com/php
+    container_name: php7.2
+    restart: unless-stopped
+    tty: true
+    environment:
+      SERVICE_NAME: php7.2      
+    working_dir: /var/www/html

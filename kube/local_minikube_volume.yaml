@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: www-pvc
+spec:
+  accessModes:
+    # One pod mount the volume
+    - ReadWriteOnce 
+    # More pods mount the volume
+    #- ReadWriteMany     
+  resources:
+    requests:
+      storage: 2Gi
+  #storageClassName: do-block-storage

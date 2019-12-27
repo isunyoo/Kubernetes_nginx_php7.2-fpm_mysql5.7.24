@@ -1,0 +1,65 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: tor
+  labels:
+    app: tor
+    tier: backend
+spec:
+  selector:
+    app: tor
+    tier: backend
+  ports:
+    - port: 9050
+      targetPort: 9050
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tor-config 
+  labels:
+    tier: backend
+data:
+  config : |
+    HiddenServiceDir /home/tor/.tor/hidden_app_1/
+    HiddenServiceVersion 2
+    HiddenServicePort 80 nginx:80    
+---    
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tor
+  labels:
+    tier: backend      
+spec: 
+  replicas: 1 
+  selector:
+    matchLabels:
+      app: tor
+      tier: backend
+  template:
+    metadata:
+      labels:
+        app: tor
+        tier: backend
+    spec:
+      volumes:  
+      - name: config
+        configMap:
+          name: tor-config
+          items:
+          - key: config
+            path: torrc
+      containers:
+      - name: tor
+        image: isunyoo/tor:v2-nginx 
+        ports:
+        - containerPort: 9050
+        #lifecycle:
+        #  postStart:
+        #    exec:
+        #      command: ["/bin/sh", "-c", "/usr/bin/tor -f /etc/tor/torrc"]
+        volumeMounts:
+        - name: config
+          mountPath: /etc/tor
